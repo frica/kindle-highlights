@@ -1,0 +1,9 @@
+[project]
+name = "kindle-highlights"
+version = "0.1.0"
+description = "Review your Kindle highlights"
+requires-python = ">=3.12"
+dependencies = [
+    "args>=0.1.0",
+    "textual>=2.1.2",
+]
