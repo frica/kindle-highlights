@@ -39,7 +39,11 @@ class HighlightViewer(Markdown):
             self.update(f"No highlights found for {self.book_title}")
             return
 
-        content = [f"# {self.book_title}\n"]
+        content = [f"# {self.book_title}"]
+        if self.highlights:
+            author = self.highlights[0]["author"]
+            content.append(f"# ({author})\n")
+            content.append("---")
 
         for highlight in self.highlights:
             content.append(f"> {highlight['text']}")
@@ -106,7 +110,7 @@ class KindleHighlightsApp(App):
 
     def on_mount(self) -> None:
         self.title = "Kindle Highlights"
-        self.sub_title = "v0.1"
+        self.sub_title = "v0.2"
 
     def action_refresh(self) -> None:
         """Refresh the book list."""

@@ -27,17 +27,21 @@ def get_book_highlights(file_path, title_name):
 
         # Check if this clipping belongs to the requested book
         if title_name in title:
+            # TODO: this should be better attached to the book rather than the highlight
+            # extract the author name between the last parenthesis
+            author = title.split("(")[-1].strip(")")
             metadata = lines[1].strip() if len(lines) > 1 else ""
             highlight_text = "\n".join(lines[2:]).strip()
 
             # Extract location and date if available
             location = ""
             date = ""
+            # TODO: won't work with all languages, only french
             if "emplacement" in metadata:
                 location_parts = metadata.split("emplacement")
                 if len(location_parts) > 1:
                     location = "emplacement " + location_parts[1].split("|")[0].strip()
-
+            # TODO: won't work with all languages, only french
             if "Ajouté le" in metadata:
                 date_parts = metadata.split("Ajouté le")
                 if len(date_parts) > 1:
@@ -45,6 +49,8 @@ def get_book_highlights(file_path, title_name):
 
             highlights.append(
                 {
+                    "title": title,
+                    "author": author,
                     "text": highlight_text,
                     "location": location,
                     "date": date,
@@ -107,8 +113,8 @@ def scan(file, arguments):
         for title in books_titles:
             print(f"* {title}")
 
-    # if arguments.count:
-    #     print(f"Number of books: {len(books_titles)}")
+    if arguments.count:
+         print(f"Number of books: {len(books_titles)}")
 
 
 def read_clippings_file(file_path: str) -> Optional[str]:
