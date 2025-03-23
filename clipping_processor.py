@@ -36,7 +36,7 @@ def get_book_highlights(file_path, title_name):
             if "emplacement" in metadata:
                 location_parts = metadata.split("emplacement")
                 if len(location_parts) > 1:
-                    location = "emplacement" + location_parts[1].split("|")[0].strip()
+                    location = "emplacement " + location_parts[1].split("|")[0].strip()
 
             if "Ajouté le" in metadata:
                 date_parts = metadata.split("Ajouté le")

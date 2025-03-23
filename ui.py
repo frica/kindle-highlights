@@ -43,7 +43,7 @@ class HighlightViewer(Markdown):
 
         for highlight in self.highlights:
             content.append(f"> {highlight['text']}")
-            content.append(f"\n— {highlight['location']} - {highlight['date']}*\n")
+            content.append(f"\n— {highlight['location']} - _{highlight['date']}_\n")
             content.append("---")
 
         self.update("\n".join(content))
