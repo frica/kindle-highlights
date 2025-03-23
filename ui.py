@@ -1,20 +1,19 @@
 from textual.app import App, ComposeResult
+from textual.containers import Horizontal
+from textual.reactive import reactive
 from textual.widgets import (
     Header,
     Footer,
-    Static,
     ListView,
     ListItem,
     Label,
+    Markdown,
 )
-from textual.containers import Horizontal, Vertical
-from textual import events
-from textual.reactive import reactive
 
 from clipping_processor import get_books_titles, get_book_highlights
 
 
-class HighlightViewer(Static):
+class HighlightViewer(Markdown):
     """Widget to display highlights from a selected book."""
 
     book_title = reactive("")
@@ -44,13 +43,14 @@ class HighlightViewer(Static):
 
         for highlight in self.highlights:
             content.append(f"> {highlight['text']}")
-            content.append(f"*{highlight['location']} - {highlight['date']}*\n")
+            content.append(f"\n— {highlight['location']} - {highlight['date']}*\n")
+            content.append("---")
 
         self.update("\n".join(content))
 
 
 class BookList(ListView):
-    """List view of available books with highlights."""
+    """List view of available books"""
 
     def on_mount(self) -> None:
         self.styles.width = "30%"
@@ -70,11 +70,11 @@ class BookList(ListView):
 class KindleHighlightsApp(App):
     CSS = """
     HighlightViewer {
-        margin: 1;
-        padding: 1;
+        /* margin: 1; */
+        /* padding: 1; */
         background: $surface;
         border: solid $primary;
-        overflow: auto;
+        width: 1fr;
     }
 
     BookList {
@@ -103,6 +103,10 @@ class KindleHighlightsApp(App):
             yield HighlightViewer()
 
         yield Footer()
+
+    def on_mount(self) -> None:
+        self.title = "Kindle Highlights"
+        self.sub_title = "v0.1"
 
     def action_refresh(self) -> None:
         """Refresh the book list."""
