@@ -2,6 +2,8 @@
 
 A Python application to view and browse your Kindle highlights and notes using a modern terminal user interface.
 
+![Application screenshot](screenshot.svg)
+
 ## Features
 
 - Browse all books from your Kindle clippings file
