@@ -8,7 +8,9 @@ from textual.widgets import (
     ListItem,
     Label,
     Markdown,
+    Input,
 )
+from textual.containers import Vertical # Changed VGroup to Vertical
 
 from clipping_processor import get_books_titles, get_book_highlights
 
@@ -53,22 +55,62 @@ class HighlightViewer(Markdown):
         self.update("\n".join(content))
 
 
-class BookList(ListView):
-    """List view of available books"""
+class BookList(Vertical): # Changed VGroup to Vertical
+    """Book list with search functionality."""
+
+    DEFAULT_CSS = """
+    BookList {
+        width: 30%;
+        height: 100%;
+    }
+    #book_search {
+        border: round $primary;
+        margin-bottom: 1;
+    }
+    #book_list_view {
+        height: 1fr;
+        border: round $primary;
+    }
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._original_books = []
+
+    def compose(self) -> ComposeResult:
+        yield Input(placeholder="Search books", id="book_search")
+        yield ListView(id="book_list_view")
 
     def on_mount(self) -> None:
-        self.styles.width = "30%"
-        self.styles.height = "100%"
         self.load_books()
 
     def load_books(self) -> None:
-        books = get_books_titles(self.app.clippings_file)
-        for book in books:
-            self.append(ListItem(Label(book)))
+        self._original_books = get_books_titles(self.app.clippings_file)
+        book_list_view = self.query_one("#book_list_view", ListView)
+        book_list_view.clear()
+        for book_title in self._original_books:
+            book_list_view.append(ListItem(Label(book_title)))
+
+    async def on_input_changed(self, event: Input.Changed) -> None:
+        search_term = event.value.lower()
+        book_list_view = self.query_one("#book_list_view", ListView)
+        book_list_view.clear()
+
+        if not search_term:
+            for book_title in self._original_books:
+                book_list_view.append(ListItem(Label(book_title)))
+        else:
+            filtered_books = [
+                book for book in self._original_books if search_term in book.lower()
+            ]
+            for book_title in filtered_books:
+                book_list_view.append(ListItem(Label(book_title)))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        book_title = event.item.children[0].renderable
-        self.app.query_one(HighlightViewer).book_title = book_title
+        # Ensure we are reacting to selections from the correct ListView
+        if event.list_view.id == "book_list_view":
+            book_title = event.item.children[0].renderable
+            self.app.query_one(HighlightViewer).book_title = str(book_title)
 
 
 class KindleHighlightsApp(App):
@@ -81,9 +123,9 @@ class KindleHighlightsApp(App):
         width: 1fr;
     }
 
-    BookList {
+    /*BookList {
         border: solid $primary;
-    }
+    }*/ /* Removed as BookList is now a VGroup */
 
     #content {
         height: 100%;
@@ -114,9 +156,12 @@ class KindleHighlightsApp(App):
 
     def action_refresh(self) -> None:
         """Refresh the book list."""
-        book_list = self.query_one(BookList)
-        book_list.clear()
-        book_list.load_books()
+        book_list_widget = self.query_one(BookList)
+        # The load_books method now handles clearing and loading into the ListView child
+        book_list_widget.load_books()
+        # Clear the search input as well
+        search_input = book_list_widget.query_one("#book_search", Input)
+        search_input.value = ""
 
 
 def run_app(clippings):
