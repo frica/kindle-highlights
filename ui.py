@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.reactive import reactive
+from textual.binding import Binding
 from textual.widgets import (
     Header,
     Footer,
@@ -10,16 +11,48 @@ from textual.widgets import (
     Markdown,
     Input,
 )
-from textual.containers import Vertical # Changed VGroup to Vertical
+from textual.containers import Vertical  # Changed VGroup to Vertical
 
 from clipping_processor import get_books_titles, get_book_highlights
+
+
+class BookSearch(Input):
+    """Search box with custom Tab focus behavior."""
+
+    BINDINGS = [
+        Binding("tab", "focus_list", show=False, priority=True),
+    ]
+
+    def action_focus_list(self) -> None:
+        self.app.query_one("#book_list_view", ListView).focus()
+
+
+class BookListView(ListView):
+    """Book list with custom Tab focus behavior."""
+
+    BINDINGS = [
+        Binding("tab", "focus_highlights", show=False, priority=True),
+    ]
+
+    def action_focus_highlights(self) -> None:
+        self.app.query_one("#highlight_viewer", HighlightViewer).focus()
 
 
 class HighlightViewer(Markdown):
     """Widget to display highlights from a selected book."""
 
+    BINDINGS = [
+        Binding("tab", "focus_search", show=False, priority=True),
+        Binding("down", "scroll_down", show=False, priority=True),
+        Binding("up", "scroll_up", show=False, priority=True),
+    ]
+
     book_title = reactive("")
     highlights = reactive([])
+    can_focus = True
+
+    def action_focus_search(self) -> None:
+        self.app.query_one("#book_search", Input).focus()
 
     def on_mount(self) -> None:
         self.styles.height = "100%"
@@ -65,7 +98,7 @@ class BookList(Vertical): # Changed VGroup to Vertical
     }
     #book_search {
         border: round $primary;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
     #book_list_view {
         height: 1fr;
@@ -78,8 +111,8 @@ class BookList(Vertical): # Changed VGroup to Vertical
         self._original_books = []
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Search books", id="book_search")
-        yield ListView(id="book_list_view")
+        yield BookSearch(placeholder="Search books", id="book_search")
+        yield BookListView(id="book_list_view")
 
     def on_mount(self) -> None:
         self.load_books()
@@ -109,8 +142,9 @@ class BookList(Vertical): # Changed VGroup to Vertical
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         # Ensure we are reacting to selections from the correct ListView
         if event.list_view.id == "book_list_view":
-            book_title = event.item.children[0].renderable
-            self.app.query_one(HighlightViewer).book_title = str(book_title)
+            book_title = event.item.children[0].content
+            highlight_viewer = self.app.query_one("#highlight_viewer", HighlightViewer)
+            highlight_viewer.book_title = str(book_title)
 
 
 class KindleHighlightsApp(App):
@@ -121,6 +155,8 @@ class KindleHighlightsApp(App):
         background: $surface;
         border: solid $primary;
         width: 1fr;
+        overflow-y: auto;
+        scrollbar-size: 1 1;
     }
 
     /*BookList {
@@ -146,7 +182,7 @@ class KindleHighlightsApp(App):
 
         with Horizontal(id="content"):
             yield BookList()
-            yield HighlightViewer()
+            yield HighlightViewer(id="highlight_viewer")
 
         yield Footer()
 
