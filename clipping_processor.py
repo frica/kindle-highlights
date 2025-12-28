@@ -91,6 +91,41 @@ def get_books_titles(file_path):
     return books
 
 
+def get_books_with_counts(file_path):
+    """Get book titles with their highlight counts in a single pass.
+    
+    Returns:
+        dict: A dictionary mapping book titles to their highlight counts
+              e.g., {"Book Title": 5, "Another Book": 12}
+    """
+    with open(file_path, "r", encoding="utf-8") as file:
+        content = file.read()
+
+    # Manually remove any stray BOM characters throughout the file
+    content = content.replace("\ufeff", "")
+
+    clippings = content.split("==========")
+
+    books = {}  # {title: count}
+
+    for clipping in clippings:
+        clipping = clipping.strip()
+        if not clipping:
+            continue
+
+        lines = clipping.split("\n")
+        if len(lines) < 3:
+            continue
+
+        title = lines[0].strip()
+        # keep the title only, strip what's after the first parenthesis' opening
+        title = title.split("(")[0].strip()
+
+        books[title] = books.get(title, 0) + 1
+
+    return books
+
+
 def scan(file, arguments):
     """Scan the MyClippings file and process it given the CL arguments"""
     file_path = file

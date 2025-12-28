@@ -13,7 +13,7 @@ from textual.widgets import (
 )
 from textual.containers import Vertical  # Changed VGroup to Vertical
 
-from clipping_processor import get_books_titles, get_book_highlights
+from clipping_processor import get_books_titles, get_book_highlights, get_books_with_counts
 
 
 class BookSearch(Input):
@@ -108,7 +108,7 @@ class BookList(Vertical): # Changed VGroup to Vertical
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._original_books = []
+        self._original_books = {}  # Changed to dict: {title: count}
 
     def compose(self) -> ComposeResult:
         yield BookSearch(placeholder="Search books", id="book_search")
@@ -118,11 +118,12 @@ class BookList(Vertical): # Changed VGroup to Vertical
         self.load_books()
 
     def load_books(self) -> None:
-        self._original_books = get_books_titles(self.app.clippings_file)
+        self._original_books = get_books_with_counts(self.app.clippings_file)
         book_list_view = self.query_one("#book_list_view", ListView)
         book_list_view.clear()
-        for book_title in self._original_books:
-            book_list_view.append(ListItem(Label(book_title)))
+        for book_title, count in self._original_books.items():
+            display_text = f"{book_title} ({count})"
+            book_list_view.append(ListItem(Label(display_text)))
 
     async def on_input_changed(self, event: Input.Changed) -> None:
         search_term = event.value.lower()
@@ -130,21 +131,26 @@ class BookList(Vertical): # Changed VGroup to Vertical
         book_list_view.clear()
 
         if not search_term:
-            for book_title in self._original_books:
-                book_list_view.append(ListItem(Label(book_title)))
+            for book_title, count in self._original_books.items():
+                display_text = f"{book_title} ({count})"
+                book_list_view.append(ListItem(Label(display_text)))
         else:
-            filtered_books = [
-                book for book in self._original_books if search_term in book.lower()
-            ]
-            for book_title in filtered_books:
-                book_list_view.append(ListItem(Label(book_title)))
+            filtered_books = {
+                title: count for title, count in self._original_books.items() 
+                if search_term in title.lower()
+            }
+            for book_title, count in filtered_books.items():
+                display_text = f"{book_title} ({count})"
+                book_list_view.append(ListItem(Label(display_text)))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         # Ensure we are reacting to selections from the correct ListView
         if event.list_view.id == "book_list_view":
-            book_title = event.item.children[0].content
+            display_text = event.item.children[0].content
+            # Extract the actual title by removing the count suffix " (N)"
+            book_title = str(display_text).rsplit(" (", 1)[0]
             highlight_viewer = self.app.query_one("#highlight_viewer", HighlightViewer)
-            highlight_viewer.book_title = str(book_title)
+            highlight_viewer.book_title = book_title
 
 
 class KindleHighlightsApp(App):
@@ -169,8 +175,8 @@ class KindleHighlightsApp(App):
     """
 
     BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("r", "refresh", "Refresh"),
+        ("ctrl+q", "quit", "Quit"),
+        ("ctrl+r", "refresh", "Refresh"),
     ]
 
     def __init__(self, clippings_file="My Clippings.txt"):
@@ -188,7 +194,7 @@ class KindleHighlightsApp(App):
 
     def on_mount(self) -> None:
         self.title = "Kindle Highlights"
-        self.sub_title = "v0.2"
+        self.sub_title = "v0.3"
 
     def action_refresh(self) -> None:
         """Refresh the book list."""
