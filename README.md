@@ -1,3 +1,5 @@
+_Note: This repository has been moved to [Codeberg](https://codeberg.org/frica/kindle-highlights)_.
+
 # Kindle Highlights
 
 A Python application to view and browse your Kindle highlights and notes using a modern terminal user interface.
